@@ -82,6 +82,7 @@ def login(
         value=token,
         httponly=True,
         samesite="lax",
+        secure=settings.COOKIE_SECURE,
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
     return resp

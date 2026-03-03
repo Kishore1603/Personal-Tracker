@@ -5,7 +5,7 @@ from functools import lru_cache
 class Settings(BaseSettings):
     APP_NAME: str = "Life Tracker"
     APP_VERSION: str = "1.0.0"
-    DEBUG: bool = True
+    DEBUG: bool = False
 
     # Database
     DATABASE_URL: str = "sqlite:///./life_tracker.db"
@@ -17,6 +17,7 @@ class Settings(BaseSettings):
 
     # Cookie
     COOKIE_NAME: str = "access_token"
+    COOKIE_SECURE: bool = False  # Set True on Render via env var
 
     class Config:
         env_file = ".env"

@@ -1,8 +1,8 @@
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from contextlib import asynccontextmanager
+from pathlib import Path
 import logging
 
 from app.config import settings
@@ -17,6 +17,9 @@ from app.routes import (
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Absolute path to the app/ directory — works regardless of CWD
+APP_DIR = Path(__file__).parent
 
 
 @asynccontextmanager
@@ -37,7 +40,7 @@ app = FastAPI(
 )
 
 # Static files
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.mount("/static", StaticFiles(directory=str(APP_DIR / "static")), name="static")
 
 # Routers
 app.include_router(auth_router)
@@ -55,7 +58,7 @@ def root():
 @app.exception_handler(404)
 async def not_found(request: Request, _exc):
     from fastapi.templating import Jinja2Templates
-    templates = Jinja2Templates(directory="app/templates")
+    templates = Jinja2Templates(directory=str(APP_DIR / "templates"))
     return templates.TemplateResponse(
         "login.html",
         {"request": request, "error": "Page not found.", "success": None},

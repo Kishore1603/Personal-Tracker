@@ -1,11 +1,17 @@
+from pathlib import Path
 from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from app.config import settings
 
+# Resolve DB path relative to this file so it works regardless of CWD
+_DB_URL = settings.DATABASE_URL
+if _DB_URL.startswith("sqlite:///."):
+    _BASE = Path(__file__).parent.parent  # backend/
+    _DB_URL = "sqlite:///" + str(_BASE / "life_tracker.db")
 
 # SQLite connection with foreign keys + WAL for better concurrency
 engine = create_engine(
-    settings.DATABASE_URL,
+    _DB_URL,
     connect_args={"check_same_thread": False},
     echo=settings.DEBUG,
 )
