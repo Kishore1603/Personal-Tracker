@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}Time Log — Life Tracker{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2>⏱ 24-Hour Time Log</h2>
+    <span class="date-badge">{{ target_date.strftime('%B %d, %Y') }}</span>
+</div>
+
+{% if error %}
+<div class="alert alert-error">❌ {{ error }}</div>
+{% endif %}
+{% if success %}
+<div class="alert alert-success">✅ {{ success }}</div>
+{% endif %}
+
+<div class="two-col-grid">
+    <!-- Form -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Log Hours</h3>
+        </div>
+        <div class="card-body">
+            <form method="post" action="/time-log" id="timeLogForm" class="styled-form">
+                <input type="hidden" name="log_date" value="{{ target_date }}" />
+
+                <div class="form-group">
+                    <label for="date_picker">Date</label>
+                    <input type="date" id="date_picker" value="{{ target_date }}"
+                           onchange="updateDate(this.value)" />
+                </div>
+
+                <div class="hours-grid">
+                    {% set cats = [
+                        ('sleep',   '😴', 'Sleep',   entry_map.get('sleep', 0)),
+                        ('work',    '💼', 'Work',    entry_map.get('work', 0)),
+                        ('study',   '📚', 'Study',   entry_map.get('study', 0)),
+                        ('workout', '🏋️', 'Workout', entry_map.get('workout', 0)),
+                        ('leisure', '🎮', 'Leisure', entry_map.get('leisure', 0)),
+                        ('idle',    '😶', 'Idle',    entry_map.get('idle', 0)),
+                    ] %}
+                    {% for key, icon, label, val in cats %}
+                    <div class="hour-card">
+                        <span class="hour-icon">{{ icon }}</span>
+                        <label>{{ label }}</label>
+                        <input type="number" name="{{ key }}" id="{{ key }}"
+                               value="{{ val }}" min="0" max="24" step="0.5"
+                               class="hour-input" oninput="updateTotal()" />
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="divider"></div>
+                <h4>Custom Activities</h4>
+                {% for i in range(1, 4) %}
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <input type="text" name="custom{{ i }}_name" placeholder="Activity name"
+                               value="{{ entry_map.keys()|list|select('ne', 'sleep','work','study','workout','leisure','idle')|list|nth(i-1, '') if False else '' }}" />
+                    </div>
+                    <div class="form-group">
+                        <input type="number" name="custom{{ i }}_hours" value="0"
+                               min="0" max="24" step="0.5" class="hour-input" oninput="updateTotal()" />
+                    </div>
+                </div>
+                {% endfor %}
+
+                <div class="unlogged-display" id="unloggedDisplay">
+                    ⏳ Un-Logged: <strong id="unloggedHours">24.0</strong> h
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full" id="submitBtn">
+                    💾 Save Time Log
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary -->
+    <div>
+        {% if summary %}
+        <div class="card mb-2">
+            <div class="card-header"><h3>📊 Today's Scores</h3></div>
+            <div class="card-body">
+                <div class="score-list">
+                    <div class="score-row">
+                        <span>⚡ Efficiency</span>
+                        <div class="progress-wrap">
+                            <div class="progress-bar" style="width:{{ summary.efficiency_score }}%"></div>
+                        </div>
+                        <strong>{{ "%.1f" | format(summary.efficiency_score) }}%</strong>
+                    </div>
+                    <div class="score-row">
+                        <span>😴 Sleep Score</span>
+                        <div class="progress-wrap">
+                            <div class="progress-bar bar-blue" style="width:{{ summary.sleep_score }}%"></div>
+                        </div>
+                        <strong>{{ "%.1f" | format(summary.sleep_score) }}</strong>
+                    </div>
+                    <div class="score-row">
+                        <span>⚖️ Balance</span>
+                        <div class="progress-wrap">
+                            <div class="progress-bar bar-orange" style="width:{{ summary.balance_score }}%"></div>
+                        </div>
+                        <strong>{{ "%.1f" | format(summary.balance_score) }}</strong>
+                    </div>
+                    <div class="score-row composite">
+                        <span>🌟 Composite</span>
+                        <div class="progress-wrap">
+                            <div class="progress-bar bar-purple" style="width:{{ summary.composite_score }}%"></div>
+                        </div>
+                        <strong>{{ "%.1f" | format(summary.composite_score) }}</strong>
+                    </div>
+                </div>
+                <div class="breakdown">
+                    <span>✅ Productive: <strong>{{ "%.1f" | format(summary.total_productive_hours) }}h</strong></span>
+                    <span>⬜ Other: <strong>{{ "%.1f" | format(summary.total_unproductive_hours) }}h</strong></span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card">
+            <div class="card-header"><h3>ℹ️ Scoring Guide</h3></div>
+            <div class="card-body text-muted small">
+                <p><strong>Efficiency:</strong> (Work + Study + Workout) ÷ 24 × 100</p>
+                <p><strong>Sleep Score:</strong> Peaks at 7–8 h, decays beyond that.</p>
+                <p><strong>Balance:</strong> How evenly hours are distributed.</p>
+                <p><strong>Composite:</strong> Efficiency×50% + Sleep×30% + Balance×20%</p>
+                <div class="rule-box">Un-Logged time is auto-filled to make up 24 h total.</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updateDate(val) {
+    window.location.href = '/time-log?log_date=' + val;
+}
+function updateTotal() {
+    const ids = ['sleep','work','study','workout','leisure','idle'];
+    let total = 0;
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) total += parseFloat(el.value) || 0;
+    });
+    for (let i = 1; i <= 3; i++) {
+        const el = document.querySelector('[name=custom' + i + '_hours]');
+        if (el) total += parseFloat(el.value) || 0;
+    }
+    total = Math.round(total * 100) / 100;
+    const unlogged = Math.max(0, Math.round((24 - total) * 100) / 100);
+    const unloggedEl = document.getElementById('unloggedHours');
+    const display = document.getElementById('unloggedDisplay');
+    const btn = document.getElementById('submitBtn');
+    if (unloggedEl) unloggedEl.textContent = unlogged.toFixed(1);
+    if (total > 24) {
+        display.style.color = '#ef4444';
+        btn.disabled = true;
+    } else {
+        display.style.color = unlogged === 0 ? '#22c55e' : '#94a3b8';
+        btn.disabled = false;
+    }
+}
+document.addEventListener('DOMContentLoaded', updateTotal);
+</script>
+{% endblock %}

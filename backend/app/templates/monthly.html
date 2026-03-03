@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Monthly Analytics — Life Tracker{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2>📅 Monthly Analytics</h2>
+    <div class="nav-period">
+        {% set prev_month = month - 1 if month > 1 else 12 %}
+        {% set prev_year = year if month > 1 else year - 1 %}
+        {% set next_month = month + 1 if month < 12 else 1 %}
+        {% set next_year = year if month < 12 else year + 1 %}
+        <a href="/dashboard/monthly?year={{ prev_year }}&month={{ prev_month }}" class="btn btn-ghost">← Prev</a>
+        <span class="badge badge-blue">{{ data.period }}</span>
+        <a href="/dashboard/monthly?year={{ next_year }}&month={{ next_month }}" class="btn btn-ghost">Next →</a>
+    </div>
+</div>
+
+<!-- KPIs -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon">⚡</div>
+        <div class="stat-body">
+            <div class="stat-value">{{ data.avg_efficiency }}%</div>
+            <div class="stat-label">Avg Efficiency</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">
+            {% if data.efficiency_change >= 0 %}📈{% else %}📉{% endif %}
+        </div>
+        <div class="stat-body">
+            <div class="stat-value {% if data.efficiency_change >= 0 %}text-green{% else %}text-red{% endif %}">
+                {{ "%.1f" | format(data.efficiency_change) }}%
+            </div>
+            <div class="stat-label">vs Previous Month</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">🔥</div>
+        <div class="stat-body">
+            <div class="stat-value">{{ data.longest_streak }}d</div>
+            <div class="stat-label">Longest Streak</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-body">
+            <div class="stat-value">{{ data.habit_completion_pct }}%</div>
+            <div class="stat-label">Habit Completion</div>
+        </div>
+    </div>
+</div>
+
+<!-- Efficiency Trend Chart -->
+{% if data.summaries %}
+<div class="card mt-2">
+    <div class="card-header"><h3>📈 Efficiency Trend</h3></div>
+    <div class="card-body">
+        <canvas id="efficiencyChart" height="120"></canvas>
+    </div>
+</div>
+
+<div class="card mt-2">
+    <div class="card-header"><h3>📋 Daily Breakdown</h3></div>
+    <div class="card-body">
+        <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Productive (h)</th>
+                    <th>Sleep (h)</th>
+                    <th>Efficiency</th>
+                    <th>Sleep Score</th>
+                    <th>Composite</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for s in data.summaries %}
+            <tr>
+                <td>{{ s.summary_date }}</td>
+                <td>{{ "%.1f" | format(s.total_productive_hours) }}</td>
+                <td>{{ "%.1f" | format(s.sleep_hours) }}</td>
+                <td>
+                    <div class="pill-bar">
+                        <div class="pill-fill" style="width:{{ [s.efficiency_score, 100]|min }}%"></div>
+                        <span>{{ "%.0f" | format(s.efficiency_score) }}%</span>
+                    </div>
+                </td>
+                <td>{{ "%.0f" | format(s.sleep_score) }}</td>
+                <td><strong>{{ "%.1f" | format(s.composite_score) }}</strong></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card mt-2"><div class="card-body"><p class="empty-msg">No data for this month.</p></div></div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if data.summaries %}
+<script>
+const effLabels = [{% for s in data.summaries %}"{{ s.summary_date }}"{% if not loop.last %},{% endif %}{% endfor %}];
+const effData = [{% for s in data.summaries %}{{ "%.2f"|format(s.efficiency_score) }}{% if not loop.last %},{% endif %}{% endfor %}];
+const sleepData = [{% for s in data.summaries %}{{ "%.2f"|format(s.sleep_score) }}{% if not loop.last %},{% endif %}{% endfor %}];
+new Chart(document.getElementById('efficiencyChart'), {
+    type: 'line',
+    data: {
+        labels: effLabels,
+        datasets: [
+            { label: 'Efficiency %', data: effData, borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.1)', fill: true, tension: 0.3 },
+            { label: 'Sleep Score', data: sleepData, borderColor: '#22c55e', fill: false, tension: 0.3, borderDash: [5,5] }
+        ]
+    },
+    options: { scales: { y: { beginAtZero: true, max: 100 } } }
+});
+</script>
+{% endif %}
+{% endblock %}

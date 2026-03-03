@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Yearly Analytics — Life Tracker{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2>🗓 Yearly Analytics</h2>
+    <div class="nav-period">
+        <a href="/dashboard/yearly?year={{ year - 1 }}" class="btn btn-ghost">← {{ year - 1 }}</a>
+        <span class="badge badge-blue">{{ year }}</span>
+        <a href="/dashboard/yearly?year={{ year + 1 }}" class="btn btn-ghost">{{ year + 1 }} →</a>
+    </div>
+</div>
+
+<!-- Composite Score Card -->
+<div class="hero-score-card">
+    <div class="hero-score-label">{{ year }} Composite Score</div>
+    <div class="hero-score-value">{{ "%.1f" | format(data.composite_score) }}</div>
+    <div class="hero-score-sub">/ 100</div>
+    <div class="hero-formula">
+        Habit (×0.4) + Efficiency (×0.3) + Sleep (×0.2) + Meals (×0.1)
+    </div>
+</div>
+
+<div class="stats-grid mt-2">
+    <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-body">
+            <div class="stat-value">{{ data.habit_consistency }}%</div>
+            <div class="stat-label">Habit Consistency (×0.4)</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">⚡</div>
+        <div class="stat-body">
+            <div class="stat-value">{{ data.avg_efficiency }}%</div>
+            <div class="stat-label">Avg Efficiency (×0.3)</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">😴</div>
+        <div class="stat-body">
+            <div class="stat-value">{{ data.avg_sleep_score }}</div>
+            <div class="stat-label">Sleep Score (×0.2)</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">🍽</div>
+        <div class="stat-body">
+            <div class="stat-value">{{ data.meal_consistency }}%</div>
+            <div class="stat-label">Meal Consistency (×0.1)</div>
+        </div>
+    </div>
+</div>
+
+<!-- Radar Chart -->
+<div class="card mt-2" style="max-width:480px;margin:0 auto;">
+    <div class="card-header"><h3>🕸 Performance Radar</h3></div>
+    <div class="card-body">
+        <canvas id="radarChart" height="280"></canvas>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+new Chart(document.getElementById('radarChart'), {
+    type: 'radar',
+    data: {
+        labels: ['Habit Consistency', 'Efficiency', 'Sleep Score', 'Meal Consistency'],
+        datasets: [{
+            label: '{{ year }}',
+            data: [
+                {{ data.habit_consistency }},
+                {{ data.avg_efficiency }},
+                {{ data.avg_sleep_score }},
+                {{ data.meal_consistency }}
+            ],
+            backgroundColor: 'rgba(99,102,241,0.2)',
+            borderColor: '#6366f1',
+            pointBackgroundColor: '#6366f1'
+        }]
+    },
+    options: {
+        scales: { r: { beginAtZero: true, max: 100 } },
+        plugins: { legend: { position: 'bottom' } }
+    }
+});
+</script>
+{% endblock %}

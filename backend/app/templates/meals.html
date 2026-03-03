@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}Meals — Life Tracker{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2>🍽 Meal Tracker</h2>
+    <span class="date-badge">{{ target_date.strftime('%B %d, %Y') }}</span>
+</div>
+
+{% if error %}
+<div class="alert alert-error">❌ {{ error }}</div>
+{% endif %}
+{% if success %}
+<div class="alert alert-success">✅ {{ success }}</div>
+{% endif %}
+
+<div class="two-col-grid">
+    <!-- Log Meal Form -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Add Meal</h3>
+        </div>
+        <div class="card-body">
+            <form method="post" action="/meals" class="styled-form">
+                <div class="form-group">
+                    <label for="meal_date">Date</label>
+                    <input type="date" id="meal_date" name="meal_date"
+                           value="{{ target_date }}"
+                           onchange="this.form.submit()" />
+                </div>
+                <div class="form-group">
+                    <label for="meal_type">Meal Type *</label>
+                    <select id="meal_type" name="meal_type" required>
+                        <option value="Breakfast">🌅 Breakfast</option>
+                        <option value="Lunch">☀️ Lunch</option>
+                        <option value="Dinner">🌙 Dinner</option>
+                        <option value="Snack">🍎 Snack</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="description">What did you eat?</label>
+                    <input type="text" id="description" name="description"
+                           placeholder="e.g. Oatmeal with berries" />
+                </div>
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label for="calories">Calories (kcal)</label>
+                        <input type="number" id="calories" name="calories"
+                               min="0" step="1" placeholder="350" />
+                    </div>
+                    <div class="form-group">
+                        <label for="protein_g">Protein (g)</label>
+                        <input type="number" id="protein_g" name="protein_g"
+                               min="0" step="0.1" placeholder="20" />
+                    </div>
+                </div>
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label for="carbs_g">Carbs (g)</label>
+                        <input type="number" id="carbs_g" name="carbs_g"
+                               min="0" step="0.1" placeholder="45" />
+                    </div>
+                    <div class="form-group">
+                        <label for="fat_g">Fat (g)</label>
+                        <input type="number" id="fat_g" name="fat_g"
+                               min="0" step="0.1" placeholder="12" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="notes">Notes</label>
+                    <input type="text" id="notes" name="notes" placeholder="Optional notes" />
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">➕ Log Meal</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Meals List -->
+    <div>
+        {% if meals %}
+        <div class="card mb-2">
+            <div class="card-header"><h3>Today's Meals</h3></div>
+            <div class="card-body">
+                {% for m in meals %}
+                <div class="meal-row">
+                    <div class="meal-info">
+                        <span class="meal-type-badge meal-{{ m.meal_type | lower }}">{{ m.meal_type }}</span>
+                        <div>
+                            <strong>{{ m.description or 'No description' }}</strong>
+                            {% if m.calories or m.protein_g %}
+                            <div class="text-muted small">
+                                {% if m.calories %}🔥 {{ m.calories | int }} kcal{% endif %}
+                                {% if m.protein_g %} · 🥩 {{ m.protein_g }}g protein{% endif %}
+                                {% if m.carbs_g %} · 🍞 {{ m.carbs_g }}g carbs{% endif %}
+                                {% if m.fat_g %} · 🧈 {{ m.fat_g }}g fat{% endif %}
+                            </div>
+                            {% endif %}
+                            {% if m.notes %}<div class="text-muted small">📝 {{ m.notes }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <form method="post" action="/meals/delete/{{ m.id }}">
+                        <button class="btn btn-sm btn-danger">✕</button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3>📊 Daily Totals</h3></div>
+            <div class="card-body">
+                <div class="macro-grid">
+                    <div class="macro-item">
+                        <span class="macro-icon">🔥</span>
+                        <span class="macro-val">{{ totals.total_calories | int }}</span>
+                        <span class="macro-lbl">kcal</span>
+                    </div>
+                    <div class="macro-item">
+                        <span class="macro-icon">🥩</span>
+                        <span class="macro-val">{{ "%.1f" | format(totals.total_protein_g) }}</span>
+                        <span class="macro-lbl">protein (g)</span>
+                    </div>
+                    <div class="macro-item">
+                        <span class="macro-icon">🍞</span>
+                        <span class="macro-val">{{ "%.1f" | format(totals.total_carbs_g) }}</span>
+                        <span class="macro-lbl">carbs (g)</span>
+                    </div>
+                    <div class="macro-item">
+                        <span class="macro-icon">🧈</span>
+                        <span class="macro-val">{{ "%.1f" | format(totals.total_fat_g) }}</span>
+                        <span class="macro-lbl">fat (g)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-body">
+                <p class="empty-msg">No meals logged for {{ target_date }}.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

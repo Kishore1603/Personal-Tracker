@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Weekly Analytics — Life Tracker{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2>📊 Weekly Analytics</h2>
+    <div class="nav-period">
+        <a href="/dashboard/weekly?ref={{ prev_week }}" class="btn btn-ghost">← Prev</a>
+        <span class="badge badge-blue">{{ data.period }}</span>
+        <a href="/dashboard/weekly?ref={{ next_week }}" class="btn btn-ghost">Next →</a>
+    </div>
+</div>
+
+<!-- KPI Row -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-body">
+            <div class="stat-value">{{ data.habit_completion_pct }}%</div>
+            <div class="stat-label">Habit Completion</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">⚡</div>
+        <div class="stat-body">
+            <div class="stat-value">{{ data.avg_productive_hours }}h</div>
+            <div class="stat-label">Avg Productive / Day</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">😴</div>
+        <div class="stat-body">
+            <div class="stat-value">{{ data.avg_sleep_hours }}h</div>
+            <div class="stat-label">Avg Sleep / Night</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">🍽</div>
+        <div class="stat-body">
+            <div class="stat-value">{{ data.meal_consistency_score }}%</div>
+            <div class="stat-label">Meal Consistency</div>
+        </div>
+    </div>
+</div>
+
+<div class="two-col-grid mt-2">
+    <!-- Time Distribution -->
+    <div class="card">
+        <div class="card-header"><h3>⏱ Time Distribution</h3></div>
+        <div class="card-body">
+            {% if data.time_distribution %}
+            <canvas id="distChart" height="220"></canvas>
+            <table class="data-table mt-2">
+                <thead><tr><th>Category</th><th>Hours</th></tr></thead>
+                <tbody>
+                {% for item in data.time_distribution %}
+                <tr>
+                    <td>{{ item.category | capitalize }}</td>
+                    <td>{{ item.total_hours }}h</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty-msg">No time data for this week.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Advanced Analytics -->
+    <div class="card">
+        <div class="card-header"><h3>🔬 Advanced Insights</h3></div>
+        <div class="card-body">
+            {% if advanced.burnout_risk_days %}
+            <div class="alert alert-warning">
+                ⚠️ <strong>Burnout Risk Detected</strong> on {{ advanced.burnout_risk_days | length }} day(s): sleep &lt; 6h AND work &gt; 10h.
+                <ul>
+                {% for d in advanced.burnout_risk_days[:5] %}
+                    <li>{{ d.date }} — Sleep: {{ d.sleep }}h, Work: {{ d.work }}h</li>
+                {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            {% if advanced.sleep_productivity_correlation.correlation is not none %}
+            <div class="info-box">
+                <strong>Sleep ↔ Productivity Correlation:</strong>
+                {{ "%.3f" | format(advanced.sleep_productivity_correlation.correlation) }}
+                (n={{ advanced.sleep_productivity_correlation.sample_size }})
+                <br/>
+                {% set corr = advanced.sleep_productivity_correlation.correlation %}
+                {% if corr > 0.5 %}
+                    <span class="text-green">Strong positive: more sleep → more productivity.</span>
+                {% elif corr > 0.2 %}
+                    <span class="text-blue">Moderate positive correlation.</span>
+                {% elif corr < -0.2 %}
+                    <span class="text-red">Negative correlation — review your schedule.</span>
+                {% else %}
+                    <span class="text-muted">Weak correlation.</span>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if advanced.moving_avg_7d %}
+<div class="card mt-2">
+    <div class="card-header"><h3>📈 7-Day Moving Average — Productivity</h3></div>
+    <div class="card-body">
+        <canvas id="movingAvgChart" height="120"></canvas>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if data.time_distribution %}
+<script>
+const distLabels = [{% for i in data.time_distribution %}"{{ i.category | capitalize }}"{% if not loop.last %},{% endif %}{% endfor %}];
+const distData = [{% for i in data.time_distribution %}{{ i.total_hours }}{% if not loop.last %},{% endif %}{% endfor %}];
+const palette = ['#6366f1','#22c55e','#f97316','#3b82f6','#ec4899','#eab308','#84cc16','#06b6d4'];
+new Chart(document.getElementById('distChart'), {
+    type: 'bar',
+    data: { labels: distLabels, datasets: [{ label: 'Hours', data: distData, backgroundColor: palette }] },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+});
+</script>
+{% endif %}
+{% if advanced.moving_avg_7d %}
+<script>
+const maLabels = [{% for r in advanced.moving_avg_7d %}"{{ r.date }}"{% if not loop.last %},{% endif %}{% endfor %}];
+const maRaw = [{% for r in advanced.moving_avg_7d %}{{ r.productive }}{% if not loop.last %},{% endif %}{% endfor %}];
+const maAvg = [{% for r in advanced.moving_avg_7d %}{{ r.moving_avg }}{% if not loop.last %},{% endif %}{% endfor %}];
+new Chart(document.getElementById('movingAvgChart'), {
+    type: 'line',
+    data: {
+        labels: maLabels,
+        datasets: [
+            { label: 'Daily', data: maRaw, borderColor: '#94a3b8', fill: false, tension: 0.3, pointRadius: 3 },
+            { label: '7d MA', data: maAvg, borderColor: '#6366f1', fill: false, tension: 0.4, borderWidth: 3 }
+        ]
+    },
+    options: { scales: { y: { beginAtZero: true, title: { display: true, text: 'Hours' } } } }
+});
+</script>
+{% endif %}
+{% endblock %}

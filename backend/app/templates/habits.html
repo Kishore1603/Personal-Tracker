@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Habits — Life Tracker{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2>✅ Habit Tracker</h2>
+    <a href="/habits/create" class="btn btn-primary">+ New Habit</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if habit_data %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Habit</th>
+                    <th>Type</th>
+                    <th>Current Streak</th>
+                    <th>Longest Streak</th>
+                    <th>Status</th>
+                    <th>Today</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for item in habit_data %}
+            <tr class="{% if item.logged_today %}row-done{% endif %}">
+                <td>
+                    <div style="display:flex;align-items:center;gap:0.5rem;">
+                        <span class="color-dot" style="background:{{ item.habit.color or '#6366f1' }}"></span>
+                        <strong>{{ item.habit.name }}</strong>
+                    </div>
+                    {% if item.habit.description %}
+                    <div class="text-muted small">{{ item.habit.description }}</div>
+                    {% endif %}
+                </td>
+                <td><span class="badge badge-{{ item.habit.habit_type }}">{{ item.habit.habit_type | capitalize }}</span></td>
+                <td><span class="streak">🔥 {{ item.current_streak }} day{{ 's' if item.current_streak != 1 }}</span></td>
+                <td><span class="streak">🏆 {{ item.longest_streak }} day{{ 's' if item.longest_streak != 1 }}</span></td>
+                <td>
+                    {% if item.habit.is_active %}
+                    <span class="badge badge-green">Active</span>
+                    {% else %}
+                    <span class="badge badge-gray">Paused</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if item.logged_today %}
+                    <span class="badge badge-green">✔ Done</span>
+                    {% else %}
+                    <span class="badge badge-gray">Pending</span>
+                    {% endif %}
+                </td>
+                <td class="action-btns">
+                    {% if item.logged_today %}
+                    <form method="post" action="/habits/unlog/{{ item.habit.id }}">
+                        <button class="btn btn-sm btn-ghost">↩ Undo</button>
+                    </form>
+                    {% else %}
+                    <form method="post" action="/habits/log/{{ item.habit.id }}">
+                        <button class="btn btn-sm btn-success">✔ Done</button>
+                    </form>
+                    {% endif %}
+                    <a href="/habits/edit/{{ item.habit.id }}" class="btn btn-sm btn-secondary">Edit</a>
+                    <form method="post" action="/habits/delete/{{ item.habit.id }}"
+                          onsubmit="return confirm('Delete this habit and all its logs?')">
+                        <button class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <p>No habits yet.</p>
+            <a href="/habits/create" class="btn btn-primary">Create your first habit!</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

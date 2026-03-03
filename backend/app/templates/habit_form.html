@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if habit else 'Create' }} Habit — Life Tracker{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2>{{ '✏️ Edit Habit' if habit else '➕ New Habit' }}</h2>
+    <a href="/habits" class="btn btn-ghost">← Back</a>
+</div>
+
+<div class="card form-card">
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+    <form method="post" action="{{ '/habits/edit/' + habit.id|string if habit else '/habits/create' }}" class="styled-form">
+        <div class="form-row-2">
+            <div class="form-group">
+                <label for="name">Habit Name *</label>
+                <input type="text" id="name" name="name" required
+                       value="{{ habit.name if habit else '' }}" placeholder="e.g. Morning Run" />
+            </div>
+            <div class="form-group">
+                <label for="habit_type">Frequency *</label>
+                <select id="habit_type" name="habit_type">
+                    <option value="daily" {% if habit and habit.habit_type == 'daily' %}selected{% endif %}>Daily</option>
+                    <option value="weekly" {% if habit and habit.habit_type == 'weekly' %}selected{% endif %}>Weekly</option>
+                    <option value="monthly" {% if habit and habit.habit_type == 'monthly' %}selected{% endif %}>Monthly</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description</label>
+            <input type="text" id="description" name="description"
+                   value="{{ habit.description if habit and habit.description else '' }}"
+                   placeholder="Optional description" />
+        </div>
+
+        <div class="form-row-3">
+            <div class="form-group">
+                <label for="category_id">Category</label>
+                <select id="category_id" name="category_id">
+                    <option value="">— None —</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}"
+                        {% if habit and habit.category_id == cat.id %}selected{% endif %}>
+                        {{ cat.icon }} {{ cat.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="target_value">Target Value</label>
+                <input type="number" id="target_value" name="target_value" step="0.1" min="0"
+                       value="{{ habit.target_value if habit else 1.0 }}" />
+            </div>
+            <div class="form-group">
+                <label for="target_unit">Unit</label>
+                <input type="text" id="target_unit" name="target_unit"
+                       value="{{ habit.target_unit if habit and habit.target_unit else '' }}"
+                       placeholder="e.g. km, pages" />
+            </div>
+        </div>
+
+        <div class="form-row-2">
+            <div class="form-group">
+                <label for="start_date">Start Date</label>
+                <input type="date" id="start_date" name="start_date"
+                       value="{{ habit.start_date | string if habit else '' }}" />
+            </div>
+            <div class="form-group">
+                <label for="color">Color</label>
+                <input type="color" id="color" name="color"
+                       value="{{ habit.color if habit and habit.color else '#6366f1' }}" />
+            </div>
+        </div>
+
+        {% if habit %}
+        <div class="form-group checkbox-group">
+            <label>
+                <input type="checkbox" name="is_active" value="on"
+                       {% if habit.is_active %}checked{% endif %} />
+                Active habit
+            </label>
+        </div>
+        {% endif %}
+
+        <div class="form-actions">
+            <a href="/habits" class="btn btn-ghost">Cancel</a>
+            <button type="submit" class="btn btn-primary">
+                {{ '💾 Save Changes' if habit else '➕ Create Habit' }}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Life Tracker{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2>Good {% if now_hour < 12 %}Morning{% elif now_hour < 17 %}Afternoon{% else %}Evening{% endif %}, {{ user.full_name or user.username }}! 👋</h2>
+    <span class="date-badge">{{ today.strftime('%A, %B %d %Y') }}</span>
+</div>
+
+<!-- Quick Stats -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-body">
+            <div class="stat-value">{{ today_logs | selectattr('logged') | list | length }} / {{ today_logs | length }}</div>
+            <div class="stat-label">Habits Done Today</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">⚡</div>
+        <div class="stat-body">
+            <div class="stat-value">{{ "%.1f" | format(time_summary.efficiency_score) if time_summary else "—" }}%</div>
+            <div class="stat-label">Today's Efficiency</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">😴</div>
+        <div class="stat-body">
+            <div class="stat-value">{{ "%.1f" | format(time_summary.sleep_hours) if time_summary else "—" }}h</div>
+            <div class="stat-label">Sleep Last Night</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">🍽</div>
+        <div class="stat-body">
+            <div class="stat-value">{{ meal_totals.logged_types | length }}</div>
+            <div class="stat-label">Meals Logged</div>
+        </div>
+    </div>
+</div>
+
+<!-- Today's Section Row -->
+<div class="two-col-grid">
+    <!-- Habits Today -->
+    <div class="card">
+        <div class="card-header">
+            <h3>✅ Today's Habits</h3>
+            <a href="/habits/create" class="btn btn-sm btn-primary">+ New</a>
+        </div>
+        <div class="card-body">
+            {% if today_logs %}
+            {% for item in today_logs %}
+            <div class="habit-row {% if item.logged %}habit-done{% endif %}">
+                <div class="habit-meta">
+                    <span class="habit-name">{{ item.habit.name }}</span>
+                    <span class="streak-badge">🔥 {{ item.current_streak }}d / 🏆 {{ item.longest_streak }}d</span>
+                </div>
+                <div class="habit-actions">
+                    {% if item.logged %}
+                    <form method="post" action="/habits/unlog/{{ item.habit.id }}">
+                        <button class="btn btn-sm btn-ghost">↩ Undo</button>
+                    </form>
+                    {% else %}
+                    <form method="post" action="/habits/log/{{ item.habit.id }}">
+                        <button class="btn btn-sm btn-success">✔ Done</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p class="empty-msg">No active habits yet. <a href="/habits/create">Create one!</a></p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Time Summary Today -->
+    <div class="card">
+        <div class="card-header">
+            <h3>⏱ Time Today</h3>
+            <a href="/time-log" class="btn btn-sm btn-primary">Log</a>
+        </div>
+        <div class="card-body">
+            {% if time_entries %}
+            <canvas id="timePieChart" height="180"></canvas>
+            {% if time_summary %}
+            <div class="score-grid">
+                <div class="score-item">
+                    <span>Efficiency</span>
+                    <strong>{{ "%.1f" | format(time_summary.efficiency_score) }}%</strong>
+                </div>
+                <div class="score-item">
+                    <span>Sleep Score</span>
+                    <strong>{{ "%.1f" | format(time_summary.sleep_score) }}</strong>
+                </div>
+                <div class="score-item">
+                    <span>Balance</span>
+                    <strong>{{ "%.1f" | format(time_summary.balance_score) }}</strong>
+                </div>
+            </div>
+            {% endif %}
+            {% else %}
+            <p class="empty-msg">No time logged today. <a href="/time-log">Log now</a></p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Meals Today -->
+<div class="card mt-2">
+    <div class="card-header">
+        <h3>🍽 Today's Meals</h3>
+        <a href="/meals" class="btn btn-sm btn-primary">Log Meal</a>
+    </div>
+    <div class="card-body">
+        {% if meals %}
+        <table class="data-table">
+            <thead><tr><th>Type</th><th>Description</th><th>Calories</th><th>Protein</th></tr></thead>
+            <tbody>
+            {% for m in meals %}
+            <tr>
+                <td><span class="badge badge-{{ m.meal_type | lower }}">{{ m.meal_type }}</span></td>
+                <td>{{ m.description or '—' }}</td>
+                <td>{{ m.calories or '—' }}</td>
+                <td>{{ m.protein_g or '—' }}g</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <div class="macro-summary">
+            <span>🔥 {{ "%.0f" | format(meal_totals.total_calories) }} kcal</span>
+            <span>🥩 {{ "%.1f" | format(meal_totals.total_protein_g) }}g protein</span>
+            <span>🍞 {{ "%.1f" | format(meal_totals.total_carbs_g) }}g carbs</span>
+            <span>🧈 {{ "%.1f" | format(meal_totals.total_fat_g) }}g fat</span>
+        </div>
+        {% else %}
+        <p class="empty-msg">No meals logged today. <a href="/meals">Log now</a></p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if time_entries %}
+<script>
+const labels = [{% for e in time_entries %}"{{ e.activity_category | capitalize }}"{% if not loop.last %},{% endif %}{% endfor %}];
+const data = [{% for e in time_entries %}{{ e.hours_spent }}{% if not loop.last %},{% endif %}{% endfor %}];
+const colors = ['#6366f1','#22c55e','#f97316','#3b82f6','#ec4899','#eab308','#84cc16','#06b6d4'];
+const ctx = document.getElementById('timePieChart').getContext('2d');
+new Chart(ctx, {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 2 }] },
+    options: { plugins: { legend: { position: 'bottom' } }, cutout: '60%' }
+});
+</script>
+{% endif %}
+{% endblock %}

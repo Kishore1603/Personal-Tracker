@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Life Tracker{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+{% if user is defined and user %}
+<nav class="navbar">
+    <div class="nav-brand">
+        <a href="/dashboard">🌟 Life Tracker</a>
+    </div>
+    <button class="nav-hamburger" id="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <div class="nav-drawer" id="nav-drawer">
+        <ul class="nav-links">
+            <li><a href="/dashboard" {% if request.url.path == '/dashboard' %}class="active"{% endif %}>🏠 Dashboard</a></li>
+            <li><a href="/habits" {% if '/habits' in request.url.path %}class="active"{% endif %}>✅ Habits</a></li>
+            <li><a href="/time-log" {% if '/time-log' in request.url.path %}class="active"{% endif %}>⏱ Time Log</a></li>
+            <li><a href="/meals" {% if '/meals' in request.url.path %}class="active"{% endif %}>🍽 Meals</a></li>
+            <li class="dropdown">
+                <a href="/dashboard/weekly" id="analytics-toggle">📊 Analytics ▾</a>
+                <ul class="dropdown-menu">
+                    <li><a href="/dashboard/weekly">Weekly</a></li>
+                    <li><a href="/dashboard/monthly">Monthly</a></li>
+                    <li><a href="/dashboard/yearly">Yearly</a></li>
+                </ul>
+            </li>
+        </ul>
+        <div class="nav-user">
+            <span>👤 {{ user.username }}</span>
+            <a href="/logout" class="btn btn-sm btn-ghost">Logout</a>
+        </div>
+    </div>
+</nav>
+{% endif %}
+
+<main class="main-content">
+    {% block content %}{% endblock %}
+</main>
+
+<footer class="footer">
+    <p>Life Tracker &copy; {{ now.year if now is defined else 2026 }} — Built with FastAPI + SQLite</p>
+</footer>
+<script src="/static/js/main.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

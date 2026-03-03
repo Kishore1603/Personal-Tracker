@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Profile — Life Tracker{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2>👤 Profile</h2>
+</div>
+<div class="card form-card">
+    <div class="card-body">
+        <table class="data-table">
+            <tbody>
+                <tr><td><strong>Username</strong></td><td>{{ user.username }}</td></tr>
+                <tr><td><strong>Email</strong></td><td>{{ user.email }}</td></tr>
+                <tr><td><strong>Full Name</strong></td><td>{{ user.full_name or '—' }}</td></tr>
+                <tr><td><strong>Member since</strong></td><td>{{ user.created_at.strftime('%B %d, %Y') }}</td></tr>
+                <tr><td><strong>Status</strong></td><td>
+                    {% if user.is_active %}<span class="badge badge-green">Active</span>{% endif %}
+                </td></tr>
+            </tbody>
+        </table>
+        <div class="form-actions mt-2">
+            <a href="/dashboard" class="btn btn-primary">← Dashboard</a>
+            <a href="/logout" class="btn btn-danger">Logout</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
