@@ -36,6 +36,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true }, { status: 201 })
   } catch (error) {
-    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
+    console.error('[register] error:', error)
+    const message = error instanceof Error ? error.message : 'Something went wrong'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
