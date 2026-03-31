@@ -113,7 +113,7 @@ export default function RewardsPage() {
                   <div className={`flex flex-col items-center gap-1 rounded-xl border px-3 py-2 text-center transition-all
                     ${currentLevel === lvl.level ? 'border-yellow-500/50 bg-yellow-500/10' :
                       currentLevel > lvl.level ? 'border-green-500/30 bg-green-500/5' : 'border-gray-200 bg-gray-50 opacity-50'}`}>
-                    <span className="text-xl">{lvl.icon}</span>
+                    <span className="text-xl">{lvl.badge}</span>
                     <span className="text-xs font-medium text-gray-900">{lvl.name}</span>
                     <span className="text-xs text-gray-500">{lvl.minPoints}+ pts</span>
                   </div>
