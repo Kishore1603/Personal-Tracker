@@ -77,7 +77,7 @@ export default function RewardsPage() {
             <div>
               <p className="text-sm text-gray-500">Current Level</p>
               <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-                <span>{levelInfo?.icon}</span>
+                <span>{levelInfo?.badge}</span>
                 <span>Level {currentLevel}</span>
               </h2>
               <p className="text-yellow-400 font-medium">{levelInfo?.name}</p>
