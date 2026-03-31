@@ -6,7 +6,7 @@ const nextConfig = {
     },
   },
   images: {
-    domains: ['lh3.googleusercontent.com', 'image.tmdb.org', 'avatars.githubusercontent.com'],
+    domains: ['image.tmdb.org', 'avatars.githubusercontent.com'],
   },
 }
 

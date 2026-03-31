@@ -12,6 +12,7 @@ CREATE TABLE "User" (
   "id"            TEXT NOT NULL PRIMARY KEY,
   "name"          TEXT,
   "email"         TEXT NOT NULL UNIQUE,
+  "password"      TEXT,
   "emailVerified" TIMESTAMP(3),
   "image"         TEXT,
   "createdAt"     TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -217,3 +218,7 @@ CREATE TABLE "Notification" (
 );
 CREATE INDEX "Notification_userId_readStatus_idx" ON "Notification"("userId", "readStatus");
 CREATE INDEX "Notification_userId_createdAt_idx" ON "Notification"("userId", "createdAt");
+
+-- ─── MIGRATION: add password column to existing databases ───────────────
+-- Run this if you already have a "User" table created without the password column:
+-- ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "password" TEXT;
