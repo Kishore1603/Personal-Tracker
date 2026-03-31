@@ -23,7 +23,7 @@ export async function createNotification(
       type: type as NotificationType,
       title: titles[type] || 'Notification',
       message,
-      metadata: metadata ? metadata : undefined,
+      metadata: metadata ? (metadata as any) : undefined,
     },
   })
 }
