@@ -1,0 +1,321 @@
+// This is your Prisma schema file
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── AUTH (NextAuth adapter) ───────────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── USER ─────────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Gamification
+  level       Int @default(1)
+  totalPoints Int @default(0)
+
+  // Relations
+  accounts        Account[]
+  sessions        Session[]
+  goals           Goal[]
+  goalLogs        GoalLog[]
+  resolutions     Resolution[]
+  financeAccounts FinanceAccount[]
+  transactions    Transaction[]
+  movies          Movie[]
+  trips           Trip[]
+  rewards         Reward[]
+  notifications   Notification[]
+  pointEvents     PointEvent[]
+}
+
+// ─── DAILY GOALS ──────────────────────────────────────────────────────────
+
+model Goal {
+  id           String   @id @default(cuid())
+  userId       String
+  title        String
+  description  String?
+  isScheduled  Boolean  @default(false)
+  scheduleDays String[] // ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+  reward       String?
+  pointValue   Int      @default(10)
+  color        String?  @default("#06b6d4")
+  icon         String?  @default("Target")
+  isArchived   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs GoalLog[]
+}
+
+model GoalLog {
+  id        String     @id @default(cuid())
+  goalId    String
+  userId    String
+  date      DateTime   @db.Date
+  status    GoalStatus @default(PENDING)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  goal Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([goalId, date])
+  @@index([userId, date])
+}
+
+enum GoalStatus {
+  COMPLETED
+  MISSED
+  PENDING
+}
+
+// ─── YEARLY RESOLUTIONS ───────────────────────────────────────────────────
+
+model Resolution {
+  id           String   @id @default(cuid())
+  userId       String
+  title        String
+  description  String?
+  targetValue  Float
+  currentValue Float    @default(0)
+  unit         String?
+  deadline     DateTime
+  milestones   Json?    // [{ percentage: 25, description: "Quarter done", reward: "...", unlocked: false }]
+  reward       String?
+  pointValue   Int      @default(50)
+  isCompleted  Boolean  @default(false)
+  category     String?  @default("Personal")
+  color        String?  @default("#8b5cf6")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── FINANCE ──────────────────────────────────────────────────────────────
+
+model FinanceAccount {
+  id          String   @id @default(cuid())
+  userId      String
+  accountName String
+  accountType String?  @default("savings")
+  balance     Float    @default(0)
+  color       String?  @default("#10b981")
+  icon        String?  @default("Wallet")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+}
+
+model Transaction {
+  id        String          @id @default(cuid())
+  userId    String
+  accountId String
+  amount    Float
+  category  String
+  type      TransactionType
+  date      DateTime
+  note      String?
+  tags      String[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account FinanceAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@index([userId, type])
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+// ─── MOVIE TRACKER ────────────────────────────────────────────────────────
+
+model Movie {
+  id          String   @id @default(cuid())
+  userId      String
+  movieName   String
+  genre       String?
+  rating      Float?
+  watchedDate DateTime
+  notes       String?
+  posterUrl   String?
+  tmdbId      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, watchedDate])
+}
+
+// ─── TRIPS ────────────────────────────────────────────────────────────────
+
+model Trip {
+  id          String   @id @default(cuid())
+  userId      String
+  destination String
+  startDate   DateTime
+  endDate     DateTime
+  totalCost   Float    @default(0)
+  notes       String?
+  coverImage  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expenses TripExpense[]
+}
+
+model TripExpense {
+  id        String       @id @default(cuid())
+  tripId    String
+  category  TripCategory @default(OTHER)
+  amount    Float
+  note      String?
+  date      DateTime
+  createdAt DateTime     @default(now())
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+}
+
+enum TripCategory {
+  TRAVEL
+  STAY
+  FOOD
+  ACTIVITIES
+  SHOPPING
+  OTHER
+}
+
+// ─── REWARDS ──────────────────────────────────────────────────────────────
+
+model Reward {
+  id          String       @id @default(cuid())
+  userId      String
+  sourceType  RewardSource
+  sourceId    String?
+  title       String
+  description String
+  pointValue  Int          @default(0)
+  badge       String?      // emoji
+  unlockedAt  DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, unlockedAt])
+}
+
+enum RewardSource {
+  DAILY_GOAL
+  STREAK_7
+  STREAK_30
+  STREAK_100
+  RESOLUTION_MILESTONE
+  RESOLUTION_COMPLETE
+  MOVIE_MILESTONE_50
+  MOVIE_MILESTONE_100
+  FINANCE_DISCIPLINE
+  LEVEL_UP
+  MANUAL
+}
+
+// ─── GAMIFICATION ────────────────────────────────────────────────────────
+
+model PointEvent {
+  id          String   @id @default(cuid())
+  userId      String
+  points      Int
+  reason      String
+  sourceType  String
+  sourceId    String?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+// ─── NOTIFICATIONS ────────────────────────────────────────────────────────
+
+model Notification {
+  id         String           @id @default(cuid())
+  userId     String
+  type       NotificationType
+  title      String
+  message    String
+  readStatus Boolean          @default(false)
+  metadata   Json?
+  createdAt  DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readStatus])
+  @@index([userId, createdAt])
+}
+
+enum NotificationType {
+  MISSED_GOAL
+  STREAK_MILESTONE
+  OVERSPENDING
+  RESOLUTION_DEADLINE
+  REWARD_UNLOCKED
+  LEVEL_UP
+  GENERAL
+}
