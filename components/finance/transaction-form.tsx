@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Modal } from '@/components/ui/modal'
 import { Input, Textarea, Select } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -34,6 +34,13 @@ export function TransactionForm({ open, onClose, onSuccess, accounts, defaultTyp
   })
 
   const categories = type === 'INCOME' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES
+
+  // accountId is '' on first render (accounts not yet loaded); sync when they arrive
+  useEffect(() => {
+    if (!form.accountId && accounts.length > 0) {
+      setForm(f => ({ ...f, accountId: accounts[0].id }))
+    }
+  }, [accounts])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
